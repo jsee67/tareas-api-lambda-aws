@@ -1,0 +1,17 @@
+bin/
+obj/
+*.env
+.env*
+env.json
+policy.json
+gh-policy.json
+sqs-policy.json
+sqs-receive-policy.json
+lambda-deploy-policy.json
+.aws/
+.vs/
+*.user
+*.suo
+.idea/
+.DS_Store
+Thumbs.db
