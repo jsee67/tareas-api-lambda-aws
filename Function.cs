@@ -38,7 +38,7 @@ public class Function
         var path = request.RequestContext.Http.Path;
         var pathParams = request.PathParameters;
 
-        context.Logger.LogInformation($"Método: {method} | Ruta: {path}");
+        context.Logger.LogInformation($"TareasApi Lambda | Método: {method} | Ruta: {path}");
 
         try
         {
