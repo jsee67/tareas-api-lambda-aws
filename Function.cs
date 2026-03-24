@@ -37,12 +37,11 @@ public class Function
         var method = request.RequestContext.Http.Method;
         var path = request.RequestContext.Http.Path;
         var pathParams = request.PathParameters;
-
-        context.Logger.LogInformation($"TareasApi Lambda | Método: {method} | Ruta: {path}");
+        var startTime = DateTime.UtcNow;
 
         try
         {
-            return (method, pathParams) switch
+            var response = (method, pathParams) switch
             {
                 ("GET", null) => await GetTareas(),
                 ("GET", _) => await GetTarea(pathParams["id"]),
@@ -51,14 +50,31 @@ public class Function
                 ("DELETE", _) => await EliminarTarea(pathParams["id"]),
                 _ => Respuesta(404, new { error = "Ruta no encontrada" })
             };
+
+            var duration = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            Logger.Log(context, "INFO", "Request completado", new
+            {
+                method,
+                path,
+                statusCode = response.StatusCode,
+                durationMs = Math.Round(duration)
+            });
+
+            return response;
         }
         catch (Exception ex)
         {
-            context.Logger.LogError($"Error: {ex.Message}");
+            var duration = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            Logger.Log(context, "ERROR", ex.Message, new
+            {
+                method,
+                path,
+                durationMs = Math.Round(duration),
+                exceptionType = ex.GetType().Name
+            });
             return Respuesta(500, new { error = ex.Message });
         }
     }
-
     private async Task<APIGatewayHttpApiV2ProxyResponse> GetTareas()
     {
         var tareas = new List<Tarea>();
@@ -211,5 +227,26 @@ public class Function
             },
             Body = body == null ? "" : JsonConvert.SerializeObject(body)
         };
+    }
+}
+
+public static class Logger
+{
+    public static void Log(ILambdaContext context, string level, string message, object? extra = null)
+    {
+        var log = new Dictionary<string, object?>
+        {
+            ["timestamp"] = DateTime.UtcNow.ToString("o"),
+            ["level"] = level,
+            ["service"] = "TareasApi",
+            ["requestId"] = context.AwsRequestId,
+            ["message"] = message
+        };
+
+        if (extra != null)
+            foreach (var prop in extra.GetType().GetProperties())
+                log[prop.Name] = prop.GetValue(extra);
+
+        context.Logger.LogInformation(JsonConvert.SerializeObject(log));
     }
 }
